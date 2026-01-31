@@ -1,16 +1,23 @@
 import { Router, Request, Response } from 'express';
 import { GeminiService } from '../services/gemini.service';
-import { docsService } from './auth.routes';
+import { getDocsService } from './auth.routes';
 import * as fs from 'fs';
 
 const router = Router();
 
-// Initialize Gemini service
-const geminiApiKey = process.env.GEMINI_API_KEY;
-if (!geminiApiKey) {
-  throw new Error('GEMINI_API_KEY not found in environment variables');
+// Lazy initialization of Gemini service
+let geminiService: GeminiService | null = null;
+
+function getGeminiService(): GeminiService {
+  if (!geminiService) {
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (!geminiApiKey) {
+      throw new Error('GEMINI_API_KEY not found in environment variables');
+    }
+    geminiService = new GeminiService(geminiApiKey);
+  }
+  return geminiService;
 }
-const geminiService = new GeminiService(geminiApiKey);
 
 // Main analysis endpoint - accepts text directly
 router.post('/analyze', async (req: Request, res: Response) => {
@@ -34,11 +41,8 @@ router.post('/analyze', async (req: Request, res: Response) => {
       });
     }
 
-    console.log('Analyzing competitor posts with Gemini...');
-    const gapMap = await geminiService.analyzeCompetitorPosts(competitorPosts);
-
-    console.log('Creating Gap Analysis Report in Google Docs...');
-    const docUrl = await docsService.createGapAnalysisReport(gapMap);
+    const gapMap = await getGeminiService().analyzeCompetitorPosts(competitorPosts);
+    const docUrl = await getDocsService().createGapAnalysisReport(gapMap);
 
     res.json({
       success: true,
@@ -77,11 +81,8 @@ router.post('/analyze-file', async (req: Request, res: Response) => {
 
     const competitorPosts = fs.readFileSync(filePath, 'utf-8');
 
-    console.log('Analyzing competitor posts from file with Gemini...');
-    const gapMap = await geminiService.analyzeCompetitorPosts(competitorPosts);
-
-    console.log('Creating Gap Analysis Report in Google Docs...');
-    const docUrl = await docsService.createGapAnalysisReport(gapMap);
+    const gapMap = await getGeminiService().analyzeCompetitorPosts(competitorPosts);
+    const docUrl = await getDocsService().createGapAnalysisReport(gapMap);
 
     res.json({
       success: true,

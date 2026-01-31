@@ -1,9 +1,9 @@
-import express, { Request, Response } from 'express';
 import * as dotenv from 'dotenv';
+dotenv.config();
+
+import express, { Request, Response } from 'express';
 import { authRoutes } from './routes/auth.routes';
 import { analysisRoutes } from './routes/analysis.routes';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,7 +11,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.text({ type: 'text/plain', limit: '10mb' }));
 
-// Health check endpoint
 app.get('/', (req: Request, res: Response) => {
   res.json({
     service: 'SyncSpark Gap Analysis Engine',
@@ -26,7 +25,7 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
-// Mount routes
+// routes
 app.use('/', authRoutes);
 app.use('/', analysisRoutes);
 
@@ -38,10 +37,5 @@ if (!process.env.GEMINI_API_KEY) {
 }
 
 app.listen(PORT, () => {
-  console.log(`SyncSpark Gap Analysis Engine running on http://localhost:${PORT}`);
-  console.log(`Visit http://localhost:${PORT} for API documentation`);
-  console.log(`\n Setup required:`);
-  console.log(`   1. Copy .env.example to .env and add your GEMINI_API_KEY`);
-  console.log(`   2. Add credentials.json from Google Cloud Console`);
-  console.log(`   3. Visit /auth endpoint to authenticate with Google`);
+  console.log(`Gap Analysis Engine running on http://localhost:${PORT}`);
 });

@@ -1,5 +1,5 @@
 {
-  "name": "syncspark-gap-analysis",
+  "name": "gap-analysis",
   "version": "1.0.0",
   "description": "Gemini-powered competitor gap analysis with Google Docs export",
   "main": "dist/index.js",

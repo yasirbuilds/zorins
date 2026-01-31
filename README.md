@@ -1,114 +1,90 @@
-## Implementation Overview
+# Gap Analysis Engine
 
-The service accepts raw competitor social media content, processes it through Gemini 1.5 Flash to identify content gaps and opportunities, then outputs a formatted Google Doc report titled "Gap Analysis Report."
+This is a Node.js service that analyzes competitor social media posts and generates a Google Doc report showing what they're missing. It uses Gemini AI to spot content gaps and opportunities.
 
-**Tech Stack:**
-- Node.js + Express + TypeScript
-- Gemini 1.5 Flash API
-- Google Docs API + Google Drive API
+## What it does
 
-## Quick Start
+Feed it your competitor's social posts → Get back a "Gap Analysis Report" in Google Docs showing:
+- What topics they're covering
+- What they're missing (the gaps)
+- Opportunities you can exploit
 
-1. Install dependencies:
+## Setup
+
+### 1. Install dependencies
 ```bash
 npm install
 ```
 
-2. Configure environment variables (copy `.env.example` to `.env` and add your Gemini API key)
+### 2. Get a Gemini API key
+- Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+- Create an API key
+- Copy `.env.example` to `.env` and paste your key:
+```
+GEMINI_API_KEY=your_key_here
+```
 
-3. Add your `credentials.json` file from Google Cloud Console to the root directory
+### 3. Set up Google Cloud credentials
 
-4. Start the server:
+You need this so the app can create Google Docs for you.
+
+**First time with Google Cloud?** Here's the quickest path:
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project (or use an existing one)
+3. Enable these APIs:
+   - Google Docs API
+   - Google Drive API
+4. Go to "Credentials" → "Create Credentials" → "OAuth client ID"
+5. Choose "Web application"
+6. Add `http://localhost:3000/auth/callback` to "Authorized redirect URIs"
+7. Download the JSON file and save it as `credentials.json` in this project's root folder
+
+### 4. Start the server
 ```bash
 npm run dev
 ```
 
-5. Complete OAuth authentication (one-time setup):
-   - Visit `http://localhost:3000/auth`
-   - Follow the authorization URL
-   - Return to `/auth/callback?code=YOUR_CODE`
+You should see: `Gap Analysis Engine running on http://localhost:3000`
 
-## API Usage
+### 5. Authenticate with Google (one-time)
 
-**Endpoint:** `POST /analyze`
+Open your browser:
+1. Visit `http://localhost:3000/auth`
+2. Copy the `authUrl` and paste it in your browser
+3. Sign in with Google and grant permissions
+4. You'll get redirected with a code - copy it
+5. Visit `http://localhost:3000/auth/callback?code=PASTE_CODE_HERE`
 
-Accepts competitor posts as JSON and returns a Google Docs URL with the gap analysis report.
+Done! A `token.json` file will be created and you won't need to do this again.
 
-```bash
-curl -X POST http://localhost:3000/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"posts": "Post 1: New product launch...\nPost 2: Customer testimonial..."}'
+## How to use it
+
+### Option 1: From a text file
+
+Create a file with competitor posts (there's already a `sample_posts.txt` you can try):
+
+```powershell
+$response = Invoke-RestMethod -Uri http://localhost:3000/analyze-file -Method POST -Body (ConvertTo-Json @{ filePath = 'sample_posts.txt' }) -ContentType "application/json"
+Start-Process $response.documentUrl
 ```
 
-**Endpoint:** `POST /analyze-file`
+### Option 2: Send posts directly
 
-Analyzes competitor posts from a text file.
-
-```bash
-curl -X POST http://localhost:3000/analyze-file \
-  -H "Content-Type: application/json" \
-  -d '{"filePath": "path/to/competitor_posts.txt"}'
+```powershell
+$response = Invoke-RestMethod -Uri http://localhost:3000/analyze -Method POST -Body (ConvertTo-Json @{ posts = "Post 1: Excited to announce our new feature!`nPost 2: Check out this customer success story..." }) -ContentType "application/json"
+Start-Process $response.documentUrl
 ```
 
-**Response:**
-
+**What you get back:**
 ```json
 {
   "success": true,
-  "documentUrl": "https://docs.google.com/document/d/1a2b3c4d5/edit",
+  "documentUrl": "https://docs.google.com/document/d/...",
   "analysis": {
-    "topics_competitor_covers": ["Product launches", "Customer testimonials"],
-    "identified_gaps": ["Industry thought leadership", "Educational content"],
-    "opportunities": ["Position as industry expert", "Create how-to guides"],
-    "analysis_summary": "Competitor focuses heavily on promotional content..."
+    "topics_competitor_covers": ["Product announcements", "Customer testimonials"],
+    "identified_gaps": ["Industry trends", "How-to content"],
+    "opportunities": ["Create educational content", "Position as thought leader"],
+    "analysis_summary": "..."
   }
 }
 ```
-
-The `documentUrl` links directly to the generated Google Doc report.
-
-## Project Structure
-
-```
-src/
-├── index.ts                    # Express server setup
-├── routes/
-│   ├── auth.routes.ts         # OAuth flow endpoints
-│   └── analysis.routes.ts     # Analysis endpoints
-└── services/
-    ├── gemini.service.ts      # Gemini API integration
-    └── googleDocs.service.ts  # Google Workspace integration
-```
-
-## Key Features Demonstrated
-
-**AI Gap Detection Logic**
-- Structured prompting to categorize competitor content
-- JSON schema validation to prevent hallucinations
-- Error handling for malformed AI responses
-
-**Google Workspace Integration**
-- Programmatic document creation via Google Docs API
-- OAuth 2.0 authentication flow
-- Batch updates for efficient API usage
-- Automatic document sharing configuration
-
-**API Design**
-- Clean separation of concerns (routes/services)
-- TypeScript for type safety
-- Multiple input methods (direct JSON, file upload)
-- Comprehensive error responses
-
-## Testing
-
-A sample competitor posts file is included (`sample_posts.txt`). Run the analysis with:
-
-```bash
-npm run dev
-# In another terminal:
-curl -X POST http://localhost:3000/analyze-file \
-  -H "Content-Type: application/json" \
-  -d '{"filePath": "sample_posts.txt"}'
-```
-
-Open the returned Google Docs URL to view the generated report.
